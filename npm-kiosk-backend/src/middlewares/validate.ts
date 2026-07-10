@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
+import { validateLog } from "../utils/logger"; // 引入日誌
 
 // 驗證檢查慢箋查詢的欄位
 export function validateVerifyPrescription(req: Request, res: Response, next: NextFunction): any {
+  validateLog("🔍 驗證檢查慢箋查詢的欄位");
   const { healthCardId, prescriptionNo } = req.body;
 
   // 如果兩個都沒傳
@@ -18,11 +20,13 @@ export function validateVerifyPrescription(req: Request, res: Response, next: Ne
     return res.status(400).json({ success: false, message: "健保卡號長度不正確" });
   }
 
+  validateLog("✅ 驗證通過，放行至 Controller");
   next(); // 檢查沒問題，放行進入下一個 Controller
 }
 
 // 驗證建立預約的欄位
 export function validateCreateAppointment(req: Request, res: Response, next: NextFunction): any {
+  validateLog("🔍 驗證檢查建立預約的欄位");
   const { prescriptionId, appointmentType, pickupDate } = req.body;
 
   if (!prescriptionId || !appointmentType || !pickupDate) {
@@ -39,5 +43,6 @@ export function validateCreateAppointment(req: Request, res: Response, next: Nex
     return res.status(400).json({ success: false, message: "日期格式不正確，須為 YYYY-MM-DD" });
   }
 
+  validateLog("✅ 驗證通過，放行至 Controller");
   next();
 }

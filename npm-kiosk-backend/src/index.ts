@@ -25,35 +25,39 @@ app.use(express.json());
  * API 1: 模擬透過 健保卡號 或 處方箋號碼 撈取慢箋資訊
  * 適用情境：民眾插卡、或掃描 QR code 後，Kiosk 畫面需要呈現「王小明先生/小姐 您好，您的慢箋資訊如下...」
  */
-app.post("/api/kiosk/verify-prescription", validateVerifyPrescription, async (req: Request, res: Response) => {
-  const { healthCardId, prescriptionNo } = req.body;
-  const db = await getDb();
+app.post(
+  "/api/kiosk/verify-prescription",
+  validateVerifyPrescription,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { healthCardId, prescriptionNo } = req.body;
+    const db = await getDb();
 
-  let query = `
+    let query = `
     SELECT p.name, pr.id as prescription_id, pr.prescription_no, pr.total_phases, pr.current_phase, pr.valid_end_date
     FROM prescriptions pr
     JOIN patients p ON pr.patient_id = p.id
     WHERE 1=1
   `;
-  const params: any[] = [];
+    const params: any[] = [];
 
-  if (healthCardId) {
-    query += ` AND p.health_card_id = ?`;
-    params.push(healthCardId);
-  } else if (prescriptionNo) {
-    query += ` AND pr.prescription_no = ?`;
-    params.push(prescriptionNo);
-  }
+    if (healthCardId) {
+      query += ` AND p.health_card_id = ?`;
+      params.push(healthCardId);
+    } else if (prescriptionNo) {
+      query += ` AND pr.prescription_no = ?`;
+      params.push(prescriptionNo);
+    }
 
-  const data = await db.get(query, params);
+    const data = await db.get(query, params);
 
-  if (!data) {
-    // 手動拋出錯誤，Express 5 一樣會自動捕捉
-    return res.status(404).json({ success: false, message: "查無對應的慢箋資料，請洽櫃檯。" });
-  }
+    if (!data) {
+      // 手動拋出錯誤，Express 5 一樣會自動捕捉
+      return res.status(404).json({ success: false, message: "查無對應的慢箋資料，請洽櫃檯。" });
+    }
 
-  return res.json({ success: true, data });
-});
+    return res.json({ success: true, data });
+  },
+);
 
 /**
  * API 2: 建立預約 / 今日報到

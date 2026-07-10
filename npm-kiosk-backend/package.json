@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src -e ts --exec ts-node src/index.ts",
+    "dev": "set DEBUG=kiosk:db,kiosk:error,kiosk:validate&& nodemon --watch src -e ts --exec ts-node src/index.ts",
     "build": "tsc"
   },
   "keywords": [],
@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
+    "debug": "^4.4.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/debug": "^4.1.13",
     "@types/express": "^5.0.6",
     "@types/node": "^26.1.1",
     "nodemon": "^3.1.14",

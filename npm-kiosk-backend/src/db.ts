@@ -1,6 +1,7 @@
 import path from "path";
 import { Database, open } from "sqlite";
 import sqlite3 from "sqlite3";
+import { dbLog } from "./utils/logger"; // 引入日誌
 
 let db: Database | null = null;
 
@@ -60,24 +61,46 @@ async function initDatabase(database: Database) {
     )
   `);
 
-  // 塞入測試假資料 (如果資料庫是空的)
-  const patientCheck = await database.get("SELECT id FROM patients LIMIT 1");
-  if (!patientCheck) {
-    // 塞入一個測試病患：王小明
-    const result = await database.run(
-      `INSERT INTO patients (health_card_id, identity_card, name, birth_date) 
-       VALUES (?, ?, ?, ?)`,
-      ["000012345678", "A123456789", "王小明", "1980-01-01"],
-    );
+  // 塞入測試假資料（依處方箋號補齊，避免舊資料庫缺少新測試資料）
+  const seedData = [
+    {
+      patient: ["000012345678", "A123456789", "王小明", "1980-01-01"],
+      prescription: ["QR001992", 3, 1, "2026-07-01", "2026-10-01"],
+    },
+    {
+      patient: ["000098765432", "B234567890", "李小華", "1975-05-15"],
+      prescription: ["QR002145", 2, 0, "2026-07-05", "2026-09-05"],
+    },
+    {
+      patient: ["000055667788", "C345678901", "陳大同", "1990-12-20"],
+      prescription: ["QR003456", 3, 2, "2026-06-01", "2026-11-01"],
+    },
+    {
+      patient: ["000011223344", "D456789012", "林美玲", "1988-03-08"],
+      prescription: ["QR004789", 4, 1, "2026-07-10", "2026-12-10"],
+    },
+  ] as const;
 
-    const patientId = result.lastID;
+  for (const { patient, prescription } of seedData) {
+    const [prescriptionNo] = prescription;
+    const existing = await database.get("SELECT id FROM prescriptions WHERE prescription_no = ?", [prescriptionNo]);
+    if (existing) continue;
 
-    // 幫王小明建一張慢箋 QR001992
+    dbLog(`補齊測試假資料：${prescriptionNo}`);
+
+    let patientRow = await database.get("SELECT id FROM patients WHERE health_card_id = ?", [patient[0]]);
+    if (!patientRow) {
+      const result = await database.run(
+        `INSERT INTO patients (health_card_id, identity_card, name, birth_date) VALUES (?, ?, ?, ?)`,
+        [...patient],
+      );
+      patientRow = { id: result.lastID };
+    }
+
     await database.run(
       `INSERT INTO prescriptions (prescription_no, patient_id, total_phases, current_phase, valid_start_date, valid_end_date) 
        VALUES (?, ?, ?, ?, ?, ?)`,
-      ["QR001992", patientId, 3, 1, "2026-07-01", "2026-10-01"],
+      [prescriptionNo, patientRow.id, ...prescription.slice(1)],
     );
-    console.log("溫馨提醒：已成功初始化測試假資料！");
   }
 }
